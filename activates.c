@@ -1,108 +1,157 @@
+
 #include "activates.h"
-#include "widgets.h"
+
 #include "button.h"
 #include "containers.h"
-#include "input.h"    
+#include "input.h"
+#include "widgets.h"
 
-void activatewin1(GtkApplication *app, gpointer user_data) {
-    (void)user_data;
+typedef struct {
+	GtkWidget *entry;
+	GtkWidget *dropdown;
+} ActiveUi;
 
-    Window winConfig = {
-        .title = "Formulaire d'inscription",
-        .width = 600,
-        .height = 400,
-        .maximized = false
-    };
-    GtkWidget *window = create_window(app, &winConfig);
-
-    Grid gridConfig = {
-        .cl_spacing = 15,
-        .margin_top = 0,
-        .r_spacing = 20,
-    };
-    GtkWidget *grid = create_grid(&gridConfig);
-    gtk_widget_set_halign(grid, GTK_ALIGN_CENTER); 
-    gtk_widget_set_valign(grid, GTK_ALIGN_CENTER); 
-
-    input_config inpConfig = {
-        .placeholder = "Nom d'utilisateur...",
-        .default_text = NULL,
-        .css_class = "",
-        .is_password = false,
-        .max_length = 50
-    };
-    GtkWidget *input_field = create_input(&inpConfig);
-    gtk_widget_set_size_request(input_field, 250, -1);
-
-    input_config passConfig = {
-        .placeholder = "Mot de passe...",
-        .default_text = NULL,
-        .css_class = "",
-        .is_password = true, 
-        .max_length = 50
-    };
-    GtkWidget *password_field = create_input(&passConfig);
-    gtk_widget_set_size_request(password_field, 250, -1);
-
-    GtkWidget *role_label = gtk_label_new("Rôle :");
-    gtk_widget_set_halign(role_label, GTK_ALIGN_START);
-
-    GtkWidget *sexe_label = gtk_label_new("Sexe :");
-    gtk_widget_set_halign(sexe_label, GTK_ALIGN_START);
-
-    const char *dropdown_options[] = {"Administrateur", "Enseignant", "Etudiant", NULL}; 
-    select_config selConfig = {
-        .options = dropdown_options,
-        .selected_index = 0, 
-        .css_class = ""
-    };
-    GtkWidget *select_field = create_select(&selConfig);
-    gtk_widget_set_size_request(select_field, 250, -1);
-
-    Box boxConfig = {
-        .orientation = GTK_ORIENTATION_HORIZONTAL,
-        .spacing = 10,
-        .homogeneous = true
-    };
-    GtkWidget *box = create_box(&boxConfig);
-
-    Radiobutton R1 = { .label = "Masculin", .group_with = NULL, .is_active = true };
-    GtkWidget *radio1 = create_radio_button(&R1);
-    
-    Radiobutton R2 = { .label = "Feminin", .group_with = radio1, .is_active = false };
-    GtkWidget *radio2 = create_radio_button(&R2);
-    
-    gtk_box_append(GTK_BOX(box), radio1);
-    gtk_box_append(GTK_BOX(box), radio2);
-    gtk_widget_set_halign(box, GTK_ALIGN_START);
-
-    GtkWidget *aide_btn = gtk_button_new();
-    gtk_button_set_has_frame(GTK_BUTTON(aide_btn), FALSE);
-    GtkWidget *aide_label = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(aide_label), "<span underline='single' color='#3584e4'>Aide</span>");
-    gtk_button_set_child(GTK_BUTTON(aide_btn), aide_label);
-    gtk_widget_set_margin_top(aide_btn, 15);
-    g_signal_connect(aide_btn, "clicked", G_CALLBACK(on_aide_clicked), window);
-
-    button btnConfig = {
-        .label = "_Inscription",
-        .css_class = "",
-        .has_frame = true,
-        .use_underline = true,
-        .width = 250,
-        .height = 40 
-    };
-    GtkWidget *submit_button = create_button(&btnConfig);
-
-    gtk_grid_attach(GTK_GRID(grid), input_field, 0, 0, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), password_field, 0, 1, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), role_label, 0, 2, 1, 1);   
-    gtk_grid_attach(GTK_GRID(grid), select_field, 1, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), sexe_label, 0, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), box, 1, 3, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), submit_button, 0, 4, 2, 1);
-    gtk_grid_attach(GTK_GRID(grid), aide_btn, 0, 5, 2, 1);
-
-    gtk_window_set_child(GTK_WINDOW(window), grid);
-    gtk_window_present(GTK_WINDOW(window));
+static const char *get_selected_text(GtkDropDown *dropdown) {
+	guint selected = gtk_drop_down_get_selected(dropdown);
+	GListModel *model = gtk_drop_down_get_model(dropdown);
+	if (GTK_IS_STRING_LIST(model)) {
+		return gtk_string_list_get_string(GTK_STRING_LIST(model), selected);
+	}
+	return NULL;
 }
+
+static void submit(ActiveUi *ui) {
+	if (!ui) {
+		return;
+	}
+
+	const char *text = NULL;
+	if (ui->entry) {
+		text = gtk_editable_get_text(GTK_EDITABLE(ui->entry));
+	}
+
+	const char *selected = NULL;
+	if (ui->dropdown) {
+		selected = get_selected_text(GTK_DROP_DOWN(ui->dropdown));
+	}
+
+	g_print("Entry: %s | Selected: %s\n", text ? text : "", selected ? selected : "");
+}
+
+static void on_submit_clicked(GtkButton *btn, gpointer user_data) {
+	(void)btn;
+	submit((ActiveUi *)user_data);
+}
+
+static void on_entry_activate(GtkEntry *entry, gpointer user_data) {
+	(void)entry;
+	submit((ActiveUi *)user_data);
+}
+
+void on_active(GtkApplication *app, gpointer user_data) {
+	(void)user_data;
+
+	Window window_config = {
+		.title = "GTK4 App",
+		.width = 800,
+		.height = 600,
+		.maximized = false,
+	};
+
+	GtkWidget *window = create_window(app, &window_config);
+
+	Grid grid_config = {
+		.column_spacing = 12,
+		.row_spacing = 12,
+		.column_homogeneous = false,
+		.row_homogeneous = false,
+		.halign = GTK_ALIGN_FILL,
+		.valign = GTK_ALIGN_START,
+		.hexpand = true,
+		.vexpand = true,
+		.margin_top = 12,
+		.margin_bottom = 12,
+		.margin_start = 12,
+		.margin_end = 12,
+	};
+
+	GtkWidget *grid = create_grid(&grid_config);
+	gtk_window_set_child(GTK_WINDOW(window), grid);
+
+	ActiveUi *ui = g_new0(ActiveUi, 1);
+	g_object_set_data_full(G_OBJECT(window), "active-ui", ui, g_free);
+
+	input_config entry_config = {
+		.placeholder = "Type something...",
+		.default_text = "",
+		.css_class = NULL,
+		.is_password = false,
+		.max_length = 0,
+		.is_editable = true,
+		.purpose = GTK_INPUT_PURPOSE_FREE_FORM,
+		.xalign = 0.0f,
+		.has_frame = true,
+		.halign = GTK_ALIGN_FILL,
+		.valign = GTK_ALIGN_CENTER,
+		.hexpand = true,
+		.margin_top = 0,
+		.margin_bottom = 0,
+		.margin_start = 0,
+		.margin_end = 0,
+		.on_change = NULL,
+		.on_activate = on_entry_activate,
+		.user_data = ui,
+	};
+
+	ui->entry = create_input(&entry_config);
+
+	static const char *options[] = {"Option A", "Option B", "Option C", NULL};
+	select_config dropdown_config = {
+		.options = options,
+		.selected_index = 0,
+		.css_class = NULL,
+		.has_entry = false,
+		.id_column = NULL,
+		.halign = GTK_ALIGN_FILL,
+		.valign = GTK_ALIGN_CENTER,
+		.hexpand = true,
+		.vexpand = false,
+		.margin_top = 0,
+		.margin_bottom = 0,
+		.margin_start = 0,
+		.margin_end = 0,
+		.on_change = my_select_handler,
+		.user_data = NULL,
+	};
+
+	ui->dropdown = create_select(&dropdown_config);
+
+	ButtonConfig button_config = {
+		.label = "Submit",
+		.icon = NULL,
+		.css_class = NULL,
+		.has_frame = true,
+		.use_underline = false,
+		.halign = GTK_ALIGN_START,
+		.valign = GTK_ALIGN_CENTER,
+		.hexpand = false,
+		.vexpand = false,
+		.margin_top = 0,
+		.margin_bottom = 0,
+		.margin_start = 0,
+		.margin_end = 0,
+		.width = 0,
+		.height = 0,
+		.on_click = on_submit_clicked,
+		.user_data = ui,
+	};
+
+	GtkWidget *submit_btn = create_button(&button_config);
+
+	add_to_grid(grid, ui->entry, &(GridChild){.column = 0, .row = 0, .width = 2, .height = 1});
+	add_to_grid(grid, ui->dropdown, &(GridChild){.column = 0, .row = 1, .width = 2, .height = 1});
+	add_to_grid(grid, submit_btn, &(GridChild){.column = 0, .row = 2, .width = 1, .height = 1});
+
+	gtk_window_present(GTK_WINDOW(window));
+}
+

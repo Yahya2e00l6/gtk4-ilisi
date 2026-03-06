@@ -22,14 +22,13 @@ GtkWidget* create_grid(Grid *config) {
 }
 
 void add_to_grid(GtkWidget *grid, GtkWidget *child, GridChild *pos) {
-    int w = (pos->width > 0) ? pos->width : 1;
-    int h = (pos->height > 0) ? pos->height : 1;
-    gtk_grid_attach(GTK_GRID(grid), child, pos->column, pos->row, w, h);
+    gtk_grid_attach(GTK_GRID(grid), child, pos->column, pos->row, pos->width, pos->height);
 }
 
 GtkWidget* create_box(Box *boxConfig) {
     GtkWidget *box = gtk_box_new(boxConfig->orientation, boxConfig->spacing);
     gtk_box_set_homogeneous(GTK_BOX(box), boxConfig->homogeneous);
+    
     gtk_widget_set_margin_top(box, boxConfig->margin_top);
     gtk_widget_set_margin_bottom(box, boxConfig->margin_bottom);
     gtk_widget_set_margin_start(box, boxConfig->margin_start);

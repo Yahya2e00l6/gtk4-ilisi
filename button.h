@@ -6,38 +6,32 @@
 
 typedef struct {
     const char *label;
-    const char *icon;       // Icon name (e.g., "document-open")
+    const char *icon;       // Use icon-name strings
     const char *css_class;
     bool has_frame;
-    bool use_underline;     // Allow Alt+Key shortcuts (e.g., "_File")
-    
-    // Layout & Expansion
+    bool use_underline;
     GtkAlign halign;
     GtkAlign valign;
     bool hexpand;
     bool vexpand;
     int margin_top, margin_bottom, margin_start, margin_end;
-    int width;              // Minimum width (-1 for default)
-    int height;             // Minimum height (-1 for default)
+    int width, height;      // Request size
 
-    // Signals
     void (*on_click)(GtkButton *btn, gpointer user_data);
     gpointer user_data;
 } ButtonConfig;
 
 typedef struct {
     const char *label;
-    GtkWidget *group_with;  // The other radio button to group this with
+    GtkWidget *group_with;  // Must be a GtkCheckButton in GTK 4
     bool is_active;
-    const char *css_class;
-
+    
     // Layout
     GtkAlign halign;
     GtkAlign valign;
-    int margin_top, margin_bottom, margin_start, margin_end;
+    int margin_top, margin_bottom;
 
-    // Signals
-    void (*on_toggled)(GtkToggleButton *btn, gpointer user_data);
+    void (*on_toggled)(GtkCheckButton *btn, gpointer user_data);
     gpointer user_data;
 } RadioConfig;
 
