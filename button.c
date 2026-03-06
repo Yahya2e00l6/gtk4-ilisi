@@ -1,57 +1,67 @@
 #include "button.h"
 
-GtkWidget *create_button(button *btnConfig) {
-    if (btnConfig == NULL) return gtk_button_new();
-    const char *label = btnConfig->label ? btnConfig->label : "";
+GtkWidget *create_button(ButtonConfig *config) {
+    GtkWidget *button;
+
+    // 1. Create the button
+    if (config->label && config->use_underline) {
+        button = gtk_button_new_with_mnemonic(config->label);
+    } else if (config->label) {
+        button = gtk_button_new_with_label(config->label);
+    } else {
+        button = gtk_button_new();
+    }
+    if (config->icon) {
+        gtk_button_set_icon_name(GTK_BUTTON(button), config->icon);
+    }
+    // 3. Styling & Layout
+    gtk_button_set_has_frame(GTK_BUTTON(button), config->has_frame);
     
-    GtkWidget *btn = btnConfig->use_underline ? gtk_button_new_with_mnemonic(label): gtk_button_new_with_label(label);
-    gtk_widget_set_size_request(btn, btnConfig->width, btnConfig->height);
-    gtk_button_set_has_frame(GTK_BUTTON(btn), btnConfig->has_frame);
-
-    if (btnConfig->css_class && btnConfig->css_class[0] != '\0') {
-        gtk_widget_add_css_class(btn, btnConfig->css_class);
+    if (config->css_class) {
+        gtk_widget_add_css_class(button, config->css_class);
     }
 
-    if (btnConfig->icon && btnConfig->icon[0] != '\0') {
-        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-        GtkWidget *image = gtk_image_new_from_icon_name(btnConfig->icon);
-        gtk_box_append(GTK_BOX(box), image);
-
-        if (label[0] != '\0') {
-            GtkWidget *lbl = btnConfig->use_underline ? gtk_label_new_with_mnemonic(label): gtk_label_new(label);
-            gtk_box_append(GTK_BOX(box), lbl);
-        }
-        gtk_button_set_child(GTK_BUTTON(btn), box);
+    gtk_widget_set_halign(button, config->halign);
+    gtk_widget_set_valign(button, config->valign);
+    gtk_widget_set_hexpand(button, config->hexpand);
+    gtk_widget_set_vexpand(button, config->vexpand);
+    
+    if (config->width > 0 || config->height > 0) {
+        gtk_widget_set_size_request(button, config->width, config->height);
     }
-    return btn;
+
+    gtk_widget_set_margin_top(button, config->margin_top);
+    gtk_widget_set_margin_bottom(button, config->margin_bottom);
+    gtk_widget_set_margin_start(button, config->margin_start);
+    gtk_widget_set_margin_end(button, config->margin_end);
+
+    // 4. Signal Connection
+    if (config->on_click) {
+        g_signal_connect(button, "clicked", G_CALLBACK(config->on_click), config->user_data);
+    }
+
+    return button;
 }
 
-GtkWidget *create_radio_button(Radiobutton *btnConfig){
-    GtkWidget *radio = gtk_check_button_new_with_label(btnConfig->label);
-    if(btnConfig->group_with != NULL){
-        gtk_check_button_set_group(GTK_CHECK_BUTTON(radio),GTK_CHECK_BUTTON(btnConfig->group_with));
+GtkWidget *create_radio_button(RadioConfig *config) {
+    GtkWidget *radio = gtk_check_button_new_with_label(config->label);
+    
+    // Set as a radio button by joining a group
+    if (config->group_with) {
+        gtk_check_button_set_group(GTK_CHECK_BUTTON(radio), GTK_CHECK_BUTTON(config->group_with));
     }
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(radio),btnConfig->is_active);
+
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(radio), config->is_active);
+    
+    // Layout
+    gtk_widget_set_halign(radio, config->halign);
+    gtk_widget_set_valign(radio, config->valign);
+    gtk_widget_set_margin_top(radio, config->margin_top);
+    gtk_widget_set_margin_bottom(radio, config->margin_bottom);
+
+    if (config->on_toggled) {
+        g_signal_connect(radio, "toggled", G_CALLBACK(config->on_toggled), config->user_data);
+    }
+
     return radio;
-}
-
-void on_aide_clicked(GtkButton *btn, gpointer parent_window) {
-    (void)btn;
-    GtkWidget *dialog = gtk_window_new();
-    gtk_window_set_title(GTK_WINDOW(dialog), "Aide");
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 350, 120);
-    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(parent_window));
-    gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
-    gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
-
-    GtkWidget *label = gtk_label_new("Entrez vos informations pour vous inscrire.\n\nVeuillez vérifier que tous les champs sont remplis.");
-    gtk_label_set_wrap(GTK_LABEL(label), TRUE);
-    gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_CENTER);
-    gtk_widget_set_margin_top(label, 20);
-    gtk_widget_set_margin_bottom(label, 20);
-    gtk_widget_set_margin_start(label, 20);
-    gtk_widget_set_margin_end(label, 20);
-
-    gtk_window_set_child(GTK_WINDOW(dialog), label);
-    gtk_window_present(GTK_WINDOW(dialog));
 }
